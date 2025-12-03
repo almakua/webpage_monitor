@@ -86,10 +86,128 @@ chmod +x setup_cron.sh
 ## 🛠️ Comandi
 
 ```bash
-python3 monitor.py          # Esegui controllo
-python3 monitor.py --test   # Testa notifiche
-python3 monitor.py --reset  # Resetta stato
+python3 monitor.py           # Esegui controllo (una volta)
+python3 monitor.py --daemon  # Esegui in loop continuo
+python3 monitor.py --test    # Testa notifiche
+python3 monitor.py --reset   # Resetta stato
 ```
+
+## 🐳 Docker
+
+### Build e push dell'immagine
+
+```bash
+# Build
+docker build -t webpage-monitor .
+
+# Tag per il registry (Docker Hub)
+docker tag webpage-monitor USERNAME/webpage-monitor:latest
+
+# Push
+docker login
+docker push USERNAME/webpage-monitor:latest
+```
+
+### Esecuzione sul server
+
+```bash
+# 1. Crea directory config
+mkdir -p ~/webpage-monitor
+cd ~/webpage-monitor
+
+# 2. Crea config.yaml
+cat > config.yaml << 'EOF'
+notifications:
+  ntfy:
+    enabled: true
+    server: "https://ntfy.sh"
+    default_topic: "tuo-topic-default"
+
+scheduler:
+  interval_minutes: 60          # Controlla ogni ora
+  randomize_delay: true         # Delay casuale 0-5 min
+  max_random_delay_minutes: 5
+
+monitors:
+  one_piece:
+    enabled: true
+    name: "One Piece (TCB Scans)"
+    url: "https://tcbonepiecechapters.com/"
+    type: "one_piece"
+    ntfy_topic: "tuo-topic-onepiece"
+
+  wtc_terrain:
+    enabled: true
+    name: "WTC Terrain Map Pack"
+    url: "https://worldteamchampionship.com/wtc-rules/"
+    type: "wtc_terrain"
+    download_pdf: true
+    compress_pdf: true
+    ntfy_topic: "tuo-topic-wtc"
+
+settings:
+  download_dir: "/config/downloads"
+  state_file: "/config/state.json"
+EOF
+
+# 3. Pull immagine
+docker pull USERNAME/webpage-monitor:latest
+
+# 4. Test notifiche
+docker run --rm -v $(pwd):/config USERNAME/webpage-monitor:latest --test
+
+# 5. Avvia in background (daemon mode)
+docker run -d \
+  --name webpage-monitor \
+  --restart unless-stopped \
+  -v $(pwd):/config \
+  USERNAME/webpage-monitor:latest
+```
+
+### Comandi Docker
+
+```bash
+# Vedi log
+docker logs -f webpage-monitor
+
+# Esecuzione singola (senza daemon)
+docker run --rm -v $(pwd):/config USERNAME/webpage-monitor:latest --config /config/config.yaml
+
+# Stop / Riavvia
+docker stop webpage-monitor
+docker restart webpage-monitor
+
+# Rimuovi container
+docker rm -f webpage-monitor
+```
+
+### Docker Compose (consigliato)
+
+Crea `docker-compose.yaml`:
+
+```yaml
+services:
+  monitor:
+    image: USERNAME/webpage-monitor:latest
+    container_name: webpage-monitor
+    restart: unless-stopped
+    volumes:
+      - ./:/config
+```
+
+Comandi:
+
+```bash
+docker compose up -d                      # Avvia daemon
+docker compose logs -f                    # Vedi log
+docker compose down                       # Stop
+docker compose restart                    # Riavvia
+docker compose run --rm monitor --test    # Test notifiche
+```
+
+### Modifica configurazione a caldo
+
+Il config viene ricaricato ad ogni ciclo! Modifica `config.yaml` e le modifiche saranno applicate al prossimo controllo.
 
 ## 🖥️ Systemd (Server Linux)
 
@@ -133,6 +251,8 @@ monitors:
 ├── state.json           # Stato (auto)
 ├── downloads/           # PDF scaricati (auto)
 ├── monitor.log          # Log cron
+├── Dockerfile           # Container image
+├── .dockerignore
 └── systemd/
     ├── install.sh       # Script installazione
     ├── uninstall.sh     # Script disinstallazione

@@ -39,13 +39,28 @@ monitors:
     ntfy_topic: "marco-wtc"  # topic dedicato
 
 # -----------------------------------------------------------------------------
+# SCHEDULER (per modalità daemon/container)
+# -----------------------------------------------------------------------------
+scheduler:
+  # Intervallo tra i controlli (in minuti)
+  interval_minutes: 60
+  
+  # Aggiungi delay casuale per non sovraccaricare i server
+  randomize_delay: true
+  max_random_delay_minutes: 5
+
+# -----------------------------------------------------------------------------
 # IMPOSTAZIONI GENERALI
 # -----------------------------------------------------------------------------
 settings:
   # Directory per i download
+  # Locale: "./downloads"
+  # Docker: "/config/downloads" (persistente nel volume)
   download_dir: "./downloads"
   
   # File di stato
+  # Locale: "./state.json"
+  # Docker: "/config/state.json" (persistente nel volume)
   state_file: "./state.json"
   
   # Retry prima di segnalare errore
