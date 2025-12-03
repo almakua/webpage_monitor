@@ -1,0 +1,30 @@
+[Unit]
+Description=Webpage Monitor - Controlla aggiornamenti One Piece e WTC
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=%i
+WorkingDirectory=/opt/webpage-monitor
+ExecStart=/usr/bin/python3 /opt/webpage-monitor/monitor.py
+StandardOutput=append:/var/log/webpage-monitor/monitor.log
+StandardError=append:/var/log/webpage-monitor/monitor.log
+
+# Timeout generoso per download PDF
+TimeoutStartSec=300
+
+# Riavvia in caso di errore
+Restart=on-failure
+RestartSec=60
+
+# Sicurezza
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/opt/webpage-monitor
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+

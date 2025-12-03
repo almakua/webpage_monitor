@@ -1,0 +1,16 @@
+[Unit]
+Description=Esegue Webpage Monitor ogni ora
+
+[Timer]
+# Esegui ogni ora
+OnCalendar=hourly
+
+# Aggiungi un ritardo casuale (0-5 min) per non sovraccaricare i server
+RandomizedDelaySec=300
+
+# Esegui subito se un'esecuzione è stata persa (es. server spento)
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+
