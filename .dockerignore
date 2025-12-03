@@ -1,0 +1,33 @@
+# Git
+.git
+.gitignore
+
+# Config e stato locali
+config.yaml
+state.json
+*.log
+
+# Download
+downloads/
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.venv
+venv
+
+# IDE
+.vscode
+.idea
+*.swp
+
+# Docs
+README.md
+LICENSE
+
+# Systemd e script locali
+systemd/
+setup_cron.sh
+
