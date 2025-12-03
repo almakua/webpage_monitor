@@ -5,7 +5,8 @@ Webpage Monitor
 Monitora pagine web per aggiornamenti e invia notifiche.
 
 Uso:
-    python monitor.py              # Esegue tutti i monitor
+    python monitor.py              # Esegue tutti i monitor (una volta)
+    python monitor.py --daemon     # Esegue in loop (per container)
     python monitor.py --test       # Testa le notifiche
     python monitor.py --reset      # Resetta lo stato (forza nuovo controllo)
 """
@@ -13,7 +14,9 @@ Uso:
 import argparse
 import json
 import os
+import random
 import re
+import signal
 import smtplib
 import subprocess
 import sys
@@ -28,6 +31,9 @@ from typing import Any
 import requests
 import yaml
 from bs4 import BeautifulSoup
+
+# Flag per gestione graceful shutdown
+_shutdown_requested = False
 
 
 # =============================================================================
@@ -401,6 +407,113 @@ def download_and_compress_pdf(url: str, version: str | None, settings: dict) -> 
 
 
 # =============================================================================
+# SCHEDULER / DAEMON
+# =============================================================================
+
+def signal_handler(signum, frame):
+    """Gestisce i segnali per graceful shutdown."""
+    global _shutdown_requested
+    print(f"\n⚠️  Ricevuto segnale {signum}, shutdown in corso...")
+    _shutdown_requested = True
+
+
+def run_checks(config: dict, state_manager: StateManager, notifier: Notifier) -> None:
+    """Esegue tutti i controlli dei monitor."""
+    settings = config.get("settings", {})
+    monitors = config.get("monitors", {})
+    
+    print("=" * 60)
+    print(f"🔍 Webpage Monitor - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("=" * 60)
+    
+    for monitor_id, monitor_config in monitors.items():
+        if not monitor_config.get("enabled", True):
+            continue
+        run_monitor(monitor_id, monitor_config, settings, state_manager, notifier)
+    
+    state_manager.save()
+    
+    print("\n" + "=" * 60)
+    print("✅ Controllo completato")
+
+
+def run_daemon(config: dict, config_path: Path) -> None:
+    """Esegue il monitor in modalità daemon (loop continuo)."""
+    global _shutdown_requested
+    
+    # Setup signal handlers per graceful shutdown
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+    
+    scheduler_config = config.get("scheduler", {})
+    interval_minutes = scheduler_config.get("interval_minutes", 60)
+    randomize_delay = scheduler_config.get("randomize_delay", True)
+    max_random_delay = scheduler_config.get("max_random_delay_minutes", 5)
+    
+    print("=" * 60)
+    print("🚀 Webpage Monitor - Modalità Daemon")
+    print("=" * 60)
+    print(f"   Intervallo: ogni {interval_minutes} minuti")
+    if randomize_delay:
+        print(f"   Delay casuale: 0-{max_random_delay} minuti")
+    print(f"   Config: {config_path}")
+    print("=" * 60)
+    
+    settings = config.get("settings", {})
+    state_file = Path(settings.get("state_file", "./state.json"))
+    if not state_file.is_absolute():
+        state_file = config_path.parent / state_file
+    
+    while not _shutdown_requested:
+        # Ricarica config ad ogni ciclo (permette modifiche a caldo)
+        try:
+            config = load_config(config_path)
+            settings = config.get("settings", {})
+            
+            # Aggiorna parametri scheduler
+            scheduler_config = config.get("scheduler", {})
+            interval_minutes = scheduler_config.get("interval_minutes", 60)
+            randomize_delay = scheduler_config.get("randomize_delay", True)
+            max_random_delay = scheduler_config.get("max_random_delay_minutes", 5)
+        except Exception as e:
+            print(f"⚠️  Errore ricaricamento config: {e}")
+        
+        # Delay casuale per non sovraccaricare i server
+        if randomize_delay:
+            delay = random.randint(0, max_random_delay * 60)
+            if delay > 0:
+                print(f"\n⏳ Delay casuale: {delay}s")
+                for _ in range(delay):
+                    if _shutdown_requested:
+                        break
+                    time.sleep(1)
+        
+        if _shutdown_requested:
+            break
+        
+        # Esegui controlli
+        try:
+            state_manager = StateManager(state_file)
+            notifier = Notifier(config)
+            run_checks(config, state_manager, notifier)
+        except Exception as e:
+            print(f"❌ Errore durante i controlli: {e}")
+        
+        # Attendi prossimo ciclo
+        next_run = datetime.now().strftime('%H:%M') 
+        wait_seconds = interval_minutes * 60
+        print(f"\n💤 Prossimo controllo tra {interval_minutes} minuti...")
+        
+        # Sleep interrompibile per graceful shutdown
+        for _ in range(wait_seconds):
+            if _shutdown_requested:
+                break
+            time.sleep(1)
+    
+    print("\n👋 Daemon terminato")
+
+
+# =============================================================================
 # MAIN
 # =============================================================================
 
@@ -485,6 +598,8 @@ def main():
     parser = argparse.ArgumentParser(description="Webpage Monitor")
     parser.add_argument("--config", "-c", type=Path, default=DEFAULT_CONFIG_FILE,
                         help="Path al file di configurazione")
+    parser.add_argument("--daemon", "-d", action="store_true",
+                        help="Esegue in modalità daemon (loop continuo)")
     parser.add_argument("--test", action="store_true",
                         help="Invia notifica di test")
     parser.add_argument("--reset", action="store_true",
@@ -498,7 +613,7 @@ def main():
     # Inizializza componenti
     state_file = Path(settings.get("state_file", DEFAULT_STATE_FILE))
     if not state_file.is_absolute():
-        state_file = SCRIPT_DIR / state_file
+        state_file = args.config.parent / state_file
     
     state_manager = StateManager(state_file)
     notifier = Notifier(config)
@@ -542,24 +657,13 @@ def main():
         print("🔄 Stato resettato")
         return
     
-    # Esegui monitors
-    print("=" * 60)
-    print(f"🔍 Webpage Monitor - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("=" * 60)
+    # Modalità daemon
+    if args.daemon:
+        run_daemon(config, args.config)
+        return
     
-    monitors = config.get("monitors", {})
-    
-    for monitor_id, monitor_config in monitors.items():
-        if not monitor_config.get("enabled", True):
-            continue
-        
-        run_monitor(monitor_id, monitor_config, settings, state_manager, notifier)
-    
-    # Salva stato
-    state_manager.save()
-    
-    print("\n" + "=" * 60)
-    print("✅ Controllo completato")
+    # Esecuzione singola
+    run_checks(config, state_manager, notifier)
 
 
 if __name__ == "__main__":
