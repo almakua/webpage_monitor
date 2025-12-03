@@ -1,0 +1,56 @@
+# =============================================================================
+# WEBPAGE MONITOR - Configurazione
+# =============================================================================
+# Copia questo file in config.yaml e modifica i valori
+
+# -----------------------------------------------------------------------------
+# NOTIFICHE (via ntfy.sh - gratuito, no account)
+# -----------------------------------------------------------------------------
+# 1. Installa l'app ntfy sul telefono (Android/iOS)
+# 2. Sottoscrivi i topic che vuoi ricevere
+# 3. Ogni monitor può avere il suo topic (o usare quello di default)
+
+notifications:
+  ntfy:
+    enabled: true
+    server: "https://ntfy.sh"
+    default_topic: "marco-monitor-general"  # topic di fallback
+
+# -----------------------------------------------------------------------------
+# MONITORS
+# -----------------------------------------------------------------------------
+monitors:
+  # One Piece - TCB Scans
+  one_piece:
+    enabled: true
+    name: "One Piece (TCB Scans)"
+    url: "https://tcbonepiecechapters.com/"
+    type: "one_piece"
+    ntfy_topic: "marco-onepiece"  # topic dedicato
+
+  # WTC Terrain Map Pack
+  wtc_terrain:
+    enabled: true
+    name: "WTC Terrain Map Pack"
+    url: "https://worldteamchampionship.com/wtc-rules/"
+    type: "wtc_terrain"
+    download_pdf: true
+    compress_pdf: true
+    ntfy_topic: "marco-wtc"  # topic dedicato
+
+# -----------------------------------------------------------------------------
+# IMPOSTAZIONI GENERALI
+# -----------------------------------------------------------------------------
+settings:
+  # Directory per i download
+  download_dir: "./downloads"
+  
+  # File di stato
+  state_file: "./state.json"
+  
+  # Retry prima di segnalare errore
+  max_retries: 3
+  retry_delay: 30
+  
+  # User agent
+  user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
