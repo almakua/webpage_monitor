@@ -63,7 +63,20 @@ python3 monitor.py --test
 
 Dovresti ricevere una notifica sul telefono! 📱
 
-### 5. Attiva cron (ogni ora)
+### 5. Attiva esecuzione automatica (ogni ora)
+
+**Opzione A: Systemd (consigliato per server)**
+
+```bash
+# Crea config.yaml prima!
+cp config.example.yaml config.yaml
+nano config.yaml
+
+# Installa
+sudo ./systemd/install.sh
+```
+
+**Opzione B: Cron**
 
 ```bash
 chmod +x setup_cron.sh
@@ -76,6 +89,27 @@ chmod +x setup_cron.sh
 python3 monitor.py          # Esegui controllo
 python3 monitor.py --test   # Testa notifiche
 python3 monitor.py --reset  # Resetta stato
+```
+
+## 🖥️ Systemd (Server Linux)
+
+**Installazione:**
+```bash
+sudo ./systemd/install.sh
+```
+
+**Comandi utili:**
+```bash
+sudo systemctl status webpage-monitor.timer   # Stato timer
+sudo systemctl list-timers                    # Prossima esecuzione
+sudo systemctl start webpage-monitor          # Esegui subito
+sudo journalctl -u webpage-monitor -f         # Log systemd
+tail -f /var/log/webpage-monitor/monitor.log  # Log applicazione
+```
+
+**Disinstallazione:**
+```bash
+sudo ./systemd/uninstall.sh
 ```
 
 ## ➕ Aggiungere Nuovi Monitor
@@ -94,11 +128,16 @@ monitors:
 ## 📁 File
 
 ```
-├── monitor.py          # Script principale
-├── config.yaml         # Configurazione
-├── state.json          # Stato (auto)
-├── downloads/          # PDF scaricati (auto)
-└── monitor.log         # Log cron
+├── monitor.py           # Script principale
+├── config.yaml          # Configurazione
+├── state.json           # Stato (auto)
+├── downloads/           # PDF scaricati (auto)
+├── monitor.log          # Log cron
+└── systemd/
+    ├── install.sh       # Script installazione
+    ├── uninstall.sh     # Script disinstallazione
+    ├── webpage-monitor.service
+    └── webpage-monitor.timer
 ```
 
 ## 🐛 Troubleshooting
