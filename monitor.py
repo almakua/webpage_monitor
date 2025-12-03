@@ -134,19 +134,24 @@ class Notifier:
             return
         
         try:
-            headers = {
-                "Title": title,
-                "Priority": "high",
-                "Tags": "bell"
+            # Usa JSON body per supportare emoji e caratteri UTF-8
+            payload = {
+                "topic": topic,
+                "title": title,
+                "message": message,
+                "priority": 4,  # high
+                "tags": ["bell"]
             }
+            
             if url:
-                headers["Click"] = url
-                headers["Actions"] = f"view, Apri, {url}"
+                payload["click"] = url
+                payload["actions"] = [
+                    {"action": "view", "label": "Apri", "url": url}
+                ]
             
             response = requests.post(
-                f"{cfg['server']}/{topic}",
-                data=message.encode("utf-8"),
-                headers=headers,
+                cfg["server"],
+                json=payload,
                 timeout=10
             )
             response.raise_for_status()
