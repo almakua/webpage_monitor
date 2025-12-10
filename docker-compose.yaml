@@ -1,0 +1,14 @@
+services:
+  monitor:
+    image: USERNAME/webpage-monitor:latest  # Cambia con il tuo username
+    container_name: webpage-monitor
+    restart: unless-stopped
+    volumes:
+      - ./:/config
+    # Healthcheck opzionale
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('https://ntfy.sh', timeout=5)"]
+      interval: 5m
+      timeout: 10s
+      retries: 3
+
