@@ -155,9 +155,23 @@ class Notifier:
                     {"action": "view", "label": "Apri", "url": url}
                 ]
             
+            # Autenticazione (opzionale)
+            headers = {}
+            if cfg.get("token"):
+                # Access token
+                headers["Authorization"] = f"Bearer {cfg['token']}"
+            elif cfg.get("username") and cfg.get("password"):
+                # Basic auth
+                import base64
+                credentials = base64.b64encode(
+                    f"{cfg['username']}:{cfg['password']}".encode()
+                ).decode()
+                headers["Authorization"] = f"Basic {credentials}"
+            
             response = requests.post(
                 cfg["server"],
                 json=payload,
+                headers=headers if headers else None,
                 timeout=10
             )
             response.raise_for_status()

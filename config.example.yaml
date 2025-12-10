@@ -4,7 +4,7 @@
 # Copia questo file in config.yaml e modifica i valori
 
 # -----------------------------------------------------------------------------
-# NOTIFICHE (via ntfy.sh - gratuito, no account)
+# NOTIFICHE (via ntfy.sh o server self-hosted)
 # -----------------------------------------------------------------------------
 # 1. Installa l'app ntfy sul telefono (Android/iOS)
 # 2. Sottoscrivi i topic che vuoi ricevere
@@ -15,6 +15,14 @@ notifications:
     enabled: true
     server: "https://ntfy.sh"
     default_topic: "marco-monitor-general"  # topic di fallback
+    
+    # Autenticazione (opzionale, per server self-hosted)
+    # Opzione 1: Username e password
+    # username: "tuo_username"
+    # password: "tua_password"
+    
+    # Opzione 2: Access token (consigliato)
+    # token: "tk_xxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 # -----------------------------------------------------------------------------
 # MONITORS
