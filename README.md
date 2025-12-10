@@ -101,11 +101,11 @@ python3 monitor.py --reset   # Resetta stato
 docker build -t webpage-monitor .
 
 # Tag per il registry (Docker Hub)
-docker tag webpage-monitor USERNAME/webpage-monitor:latest
+docker tag webpage-monitor alm4kua/webpage-monitor:latest
 
 # Push
 docker login
-docker push USERNAME/webpage-monitor:latest
+docker push alm4kua/webpage-monitor:latest
 ```
 
 ### Esecuzione sul server
@@ -151,17 +151,17 @@ settings:
 EOF
 
 # 3. Pull immagine
-docker pull USERNAME/webpage-monitor:latest
+docker pull alm4kua/webpage-monitor:latest
 
 # 4. Test notifiche
-docker run --rm -v $(pwd):/config USERNAME/webpage-monitor:latest --test
+docker run --rm -v $(pwd):/config alm4kua/webpage-monitor:latest --test
 
 # 5. Avvia in background (daemon mode)
 docker run -d \
   --name webpage-monitor \
   --restart unless-stopped \
   -v $(pwd):/config \
-  USERNAME/webpage-monitor:latest
+  alm4kua/webpage-monitor:latest
 ```
 
 ### Comandi Docker
@@ -171,7 +171,7 @@ docker run -d \
 docker logs -f webpage-monitor
 
 # Esecuzione singola (senza daemon)
-docker run --rm -v $(pwd):/config USERNAME/webpage-monitor:latest --config /config/config.yaml
+docker run --rm -v $(pwd):/config alm4kua/webpage-monitor:latest --config /config/config.yaml
 
 # Stop / Riavvia
 docker stop webpage-monitor
@@ -188,7 +188,7 @@ Crea `docker-compose.yaml`:
 ```yaml
 services:
   monitor:
-    image: USERNAME/webpage-monitor:latest
+    image: alm4kua/webpage-monitor:latest
     container_name: webpage-monitor
     restart: unless-stopped
     volumes:

@@ -1,6 +1,6 @@
 services:
   monitor:
-    image: USERNAME/webpage-monitor:latest  # Cambia con il tuo username
+    image: alm4kua/webpage-monitor:latest
     container_name: webpage-monitor
     restart: unless-stopped
     volumes:
